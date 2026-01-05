@@ -5,7 +5,7 @@ Streetwise is a civic engagement platform for tracking Seattle transportation pr
 
 ## Current Status
 **Version**: 0.1.0 (Initial Setup)
-**Phase**: Foundation (P0)
+**Phase**: Phase 1 - Core User Experience (In Progress)
 **Last Updated**: January 4, 2026
 
 ## Technical Decisions
@@ -59,10 +59,12 @@ Streetwise is a civic engagement platform for tracking Seattle transportation pr
 - [x] Mapbox integration with project markers (cleaned up)
 - [x] Dark mode with grayscale map styles
 
-### Phase 1 (Next Steps)
-- [ ] Project detail page
-- [ ] List/tile view with filters
+### Phase 1 (In Progress)
+- [x] Project detail page (`/projects/[id]`)
+- [x] Projects list page (`/projects`)
+- [ ] List/tile view with filters and sorting
 - [ ] User suggestion form
+- [ ] Global navigation header on all pages
 
 ### Phase 2 (Engagement)
 - [ ] Voting system
@@ -91,8 +93,13 @@ streetwise/
 │   │   ├── auth/callback/      # OAuth callback
 │   │   ├── login/              # Login page
 │   │   ├── map/                # Map view
+│   │   ├── projects/           # Projects pages
+│   │   │   ├── [id]/           # Project detail (dynamic)
+│   │   │   └── page.tsx        # Projects list
 │   │   └── page.tsx            # Home page
-│   ├── components/             # React components (to be created)
+│   ├── components/             # React components
+│   │   ├── ProjectMap.tsx      # Mapbox map component
+│   │   └── ThemeToggle.tsx     # Dark mode toggle
 │   └── lib/
 │       ├── supabase/           # Supabase clients
 │       ├── types.ts            # TypeScript types
@@ -100,6 +107,9 @@ streetwise/
 ├── supabase/
 │   └── migrations/             # SQL migrations
 ├── docs/                       # Documentation
+│   ├── features/               # Feature documentation
+│   ├── sessions/               # Session summaries
+│   └── database/               # Database schema docs
 └── public/                     # Static assets
 ```
 
