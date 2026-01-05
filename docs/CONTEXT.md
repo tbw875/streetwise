@@ -57,6 +57,7 @@ Streetwise is a civic engagement platform for tracking Seattle transportation pr
 - [x] Database schema
 - [x] Basic pages (home, login, map placeholder)
 - [x] Mapbox integration with project markers (cleaned up)
+- [x] Dark mode with grayscale map styles
 
 ### Phase 1 (Next Steps)
 - [ ] Project detail page

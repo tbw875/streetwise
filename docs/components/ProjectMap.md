@@ -98,6 +98,13 @@ interface ProjectWithCategory {
 NEXT_PUBLIC_MAPBOX_TOKEN=pk.your_token_here
 ```
 
+### Theme Support
+The map automatically adapts to the app's theme:
+- **Light mode**: Uses `mapbox://styles/mapbox/light-v11` (grayscale)
+- **Dark mode**: Uses `mapbox://styles/mapbox/dark-v11` (dark grayscale)
+- Switches dynamically when user toggles theme
+- Uses `next-themes` for theme detection
+
 ### Error Handling
 - Missing token: Shows error state with setup instructions
 - Map initialization failure: Shows generic error message

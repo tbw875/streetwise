@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
+import { useTheme } from 'next-themes';
 import mapboxgl from 'mapbox-gl';
 import 'mapbox-gl/dist/mapbox-gl.css';
 import type { Project, Category } from '@/lib/types';
@@ -34,6 +35,12 @@ export default function ProjectMap({
   const map = useRef<mapboxgl.Map | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const { theme, resolvedTheme } = useTheme();
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   useEffect(() => {
     const token = process.env.NEXT_PUBLIC_MAPBOX_TOKEN;
@@ -49,10 +56,14 @@ export default function ProjectMap({
 
     mapboxgl.accessToken = token;
 
+    const mapStyle = resolvedTheme === 'dark'
+      ? 'mapbox://styles/mapbox/dark-v11'
+      : 'mapbox://styles/mapbox/light-v11';
+
     try {
       map.current = new mapboxgl.Map({
         container: mapContainer.current,
-        style: 'mapbox://styles/mapbox/streets-v12',
+        style: mapStyle,
         center: initialCenter,
         zoom: initialZoom,
       });
@@ -189,7 +200,18 @@ export default function ProjectMap({
         map.current = null;
       }
     };
-  }, [projects, initialCenter, initialZoom]);
+  }, [projects, initialCenter, initialZoom, resolvedTheme]);
+
+  // Update map style when theme changes
+  useEffect(() => {
+    if (!map.current || !mounted) return;
+
+    const mapStyle = resolvedTheme === 'dark'
+      ? 'mapbox://styles/mapbox/dark-v11'
+      : 'mapbox://styles/mapbox/light-v11';
+
+    map.current.setStyle(mapStyle);
+  }, [resolvedTheme, mounted]);
 
   return (
     <div className="absolute inset-0">
