@@ -30,24 +30,16 @@ async function MapPageContent() {
     .select('*')
     .order('display_order');
   
-  // Fetch initial projects (will be replaced with map bounds query)
-  const { data: projects } = await supabase
-    .from('projects')
-    .select(`
-      id,
-      title,
-      description,
-      source,
-      status,
-      geometry,
-      geometry_type,
-      location_name,
-      vote_score,
-      comment_count,
-      category:categories(id, name, color, icon)
-    `)
-    .eq('is_hidden', false)
+  // Fetch initial projects with geometry converted to GeoJSON
+  const { data: rawProjects } = await supabase
+    .rpc('get_projects_with_geojson', {})
     .limit(100);
+
+  // Transform the data to match our interface
+  const projects = rawProjects?.map((p: any) => ({
+    ...p,
+    geometry: p.geometry ? JSON.parse(p.geometry) : null,
+  })) || [];
 
   return (
     <div className="h-screen flex flex-col">
