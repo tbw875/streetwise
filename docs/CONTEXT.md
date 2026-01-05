@@ -63,8 +63,8 @@ Streetwise is a civic engagement platform for tracking Seattle transportation pr
 - [x] Project detail page (`/projects/[id]`)
 - [x] Projects list page (`/projects`)
 - [x] List/tile view with filters and sorting
+- [x] Global navigation header on all pages
 - [ ] User suggestion form
-- [ ] Global navigation header on all pages
 
 ### Phase 2 (Engagement)
 - [ ] Voting system
@@ -98,7 +98,9 @@ streetwise/
 │   │   │   └── page.tsx        # Projects list
 │   │   └── page.tsx            # Home page
 │   ├── components/             # React components
+│   │   ├── Navigation.tsx      # Global navigation header
 │   │   ├── ProjectMap.tsx      # Mapbox map component
+│   │   ├── ProjectsClient.tsx  # Projects list with filters
 │   │   └── ThemeToggle.tsx     # Dark mode toggle
 │   └── lib/
 │       ├── supabase/           # Supabase clients
