@@ -5,7 +5,7 @@ Streetwise is a civic engagement platform for tracking Seattle transportation pr
 
 ## Current Status
 **Version**: 0.1.0 (Initial Setup)
-**Phase**: Phase 1 - Core User Experience (In Progress)
+**Phase**: Phase 1 - Core User Experience (Complete)
 **Last Updated**: January 4, 2026
 
 ## Technical Decisions
@@ -59,12 +59,12 @@ Streetwise is a civic engagement platform for tracking Seattle transportation pr
 - [x] Mapbox integration with project markers (cleaned up)
 - [x] Dark mode with grayscale map styles
 
-### Phase 1 (In Progress)
+### Phase 1 - Core User Experience (Complete)
 - [x] Project detail page (`/projects/[id]`)
 - [x] Projects list page (`/projects`)
 - [x] List/tile view with filters and sorting
 - [x] Global navigation header on all pages
-- [ ] User suggestion form
+- [x] User suggestion form (`/suggest`)
 
 ### Phase 2 (Engagement)
 - [ ] Voting system
@@ -101,6 +101,7 @@ streetwise/
 │   │   ├── Navigation.tsx      # Global navigation header
 │   │   ├── ProjectMap.tsx      # Mapbox map component
 │   │   ├── ProjectsClient.tsx  # Projects list with filters
+│   │   ├── SuggestForm.tsx     # Project suggestion form
 │   │   └── ThemeToggle.tsx     # Dark mode toggle
 │   └── lib/
 │       ├── supabase/           # Supabase clients
