@@ -1,27 +1,150 @@
 import Link from 'next/link';
-import { MapPin, ArrowUp, MessageCircle, Eye } from 'lucide-react';
+import { MapPin, List } from 'lucide-react';
 import { createClient } from '@/lib/supabase/server';
-import { getStatusLabel, getStatusColorClass } from '@/lib/utils';
-import type { Project, Category } from '@/lib/types';
+import type { Project, Category, ProjectSource, ProjectStatus } from '@/lib/types';
+import ProjectsClient from '@/components/ProjectsClient';
 
 interface ProjectWithCategory extends Project {
   category: Category | null;
 }
 
-export default async function ProjectsPage() {
+export interface FilterOptions {
+  categories: Category[];
+  statuses: ProjectStatus[];
+  sources: ProjectSource[];
+  neighborhoods: string[];
+}
+
+export default async function ProjectsPage({
+  searchParams,
+}: {
+  searchParams: { [key: string]: string | string[] | undefined };
+}) {
   const supabase = await createClient();
 
-  // Fetch all projects with categories
-  const { data: projects } = await supabase
+  // Parse search params
+  const categoryFilters = searchParams.category
+    ? Array.isArray(searchParams.category)
+      ? searchParams.category
+      : [searchParams.category]
+    : [];
+
+  const statusFilters = searchParams.status
+    ? Array.isArray(searchParams.status)
+      ? searchParams.status
+      : [searchParams.status]
+    : [];
+
+  const sourceFilters = searchParams.source
+    ? Array.isArray(searchParams.source)
+      ? searchParams.source
+      : [searchParams.source]
+    : [];
+
+  const neighborhoodFilters = searchParams.neighborhood
+    ? Array.isArray(searchParams.neighborhood)
+      ? searchParams.neighborhood
+      : [searchParams.neighborhood]
+    : [];
+
+  const sortBy = (searchParams.sort as string) || 'newest';
+
+  // Fetch all categories for filter options
+  const { data: categories } = await supabase
+    .from('categories')
+    .select('*')
+    .order('display_order');
+
+  // Fetch distinct neighborhoods for filter options
+  const { data: neighborhoodData } = await supabase
+    .from('projects')
+    .select('neighborhood')
+    .not('neighborhood', 'is', null)
+    .eq('is_hidden', false);
+
+  const neighborhoods = Array.from(
+    new Set(
+      (neighborhoodData || [])
+        .map((p) => p.neighborhood)
+        .filter((n): n is string => n !== null)
+    )
+  ).sort();
+
+  // Build projects query with filters
+  let query = supabase
     .from('projects')
     .select(`
       *,
       category:categories(*)
     `)
-    .eq('is_hidden', false)
-    .order('created_at', { ascending: false });
+    .eq('is_hidden', false);
 
-  const projectsWithCategory = projects as unknown as ProjectWithCategory[] || [];
+  // Apply category filter
+  if (categoryFilters.length > 0) {
+    // Get category IDs from slugs
+    const categoryIds = (categories || [])
+      .filter((c) => categoryFilters.includes(c.slug))
+      .map((c) => c.id);
+    if (categoryIds.length > 0) {
+      query = query.in('category_id', categoryIds);
+    }
+  }
+
+  // Apply status filter
+  if (statusFilters.length > 0) {
+    query = query.in('status', statusFilters as ProjectStatus[]);
+  }
+
+  // Apply source filter
+  if (sourceFilters.length > 0) {
+    query = query.in('source', sourceFilters as ProjectSource[]);
+  }
+
+  // Apply neighborhood filter
+  if (neighborhoodFilters.length > 0) {
+    query = query.in('neighborhood', neighborhoodFilters);
+  }
+
+  // Apply sorting
+  switch (sortBy) {
+    case 'oldest':
+      query = query.order('created_at', { ascending: true });
+      break;
+    case 'votes':
+      query = query.order('vote_score', { ascending: false });
+      break;
+    case 'comments':
+      query = query.order('comment_count', { ascending: false });
+      break;
+    case 'deadline':
+      // For now, just sort by created_at desc
+      // In future, join with project_dates to sort by nearest upcoming date
+      query = query.order('created_at', { ascending: false });
+      break;
+    default: // newest
+      query = query.order('created_at', { ascending: false });
+  }
+
+  const { data: projects } = await query;
+
+  const projectsWithCategory =
+    (projects as unknown as ProjectWithCategory[]) || [];
+
+  // Prepare filter options
+  const filterOptions: FilterOptions = {
+    categories: categories || [],
+    statuses: [
+      'proposed',
+      'under_review',
+      'planned',
+      'in_progress',
+      'completed',
+      'rejected',
+      'on_hold',
+    ],
+    sources: ['official_sdot', 'official_wadot', 'user_suggestion'],
+    neighborhoods,
+  };
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -36,22 +159,22 @@ export default async function ProjectsPage() {
           </Link>
 
           <div className="flex items-center gap-4">
-            <Link
-              href="/map"
-              className="text-sm font-medium text-gray-600 hover:text-gray-900"
-            >
-              Explore Map
-            </Link>
-            <Link
-              href="/projects"
-              className="text-sm font-medium text-gray-900"
-            >
-              Projects
-            </Link>
-            <Link
-              href="/login"
-              className="btn-primary btn-sm"
-            >
+            {/* View toggle */}
+            <div className="flex rounded-lg border border-gray-200 p-1">
+              <Link
+                href="/map"
+                className="flex items-center gap-1 px-3 py-1.5 text-sm font-medium text-gray-600 hover:bg-gray-50 rounded-md"
+              >
+                <MapPin className="h-4 w-4" />
+                <span className="hidden sm:inline">Map</span>
+              </Link>
+              <button className="flex items-center gap-1 px-3 py-1.5 text-sm font-medium bg-brand-600 text-white rounded-md">
+                <List className="h-4 w-4" />
+                <span className="hidden sm:inline">List</span>
+              </button>
+            </div>
+
+            <Link href="/login" className="btn-primary btn-sm">
               Sign In
             </Link>
           </div>
@@ -59,83 +182,17 @@ export default async function ProjectsPage() {
       </header>
 
       {/* Main Content */}
-      <main className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">All Projects</h1>
-          <p className="text-gray-600">
-            Explore transportation projects and community suggestions across Seattle
-          </p>
-        </div>
-
-        {/* Projects Grid */}
-        <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-          {projectsWithCategory.map((project) => (
-            <Link
-              key={project.id}
-              href={`/projects/${project.id}`}
-              className="card-hover p-6 group"
-            >
-              {/* Category & Status Badges */}
-              <div className="flex flex-wrap items-center gap-2 mb-3">
-                {project.category && (
-                  <span
-                    className="badge text-white"
-                    style={{ backgroundColor: project.category.color }}
-                  >
-                    {project.category.name}
-                  </span>
-                )}
-                <span className={`badge ${getStatusColorClass(project.status)}`}>
-                  {getStatusLabel(project.status)}
-                </span>
-              </div>
-
-              {/* Title */}
-              <h2 className="text-lg font-semibold text-gray-900 mb-2 group-hover:text-brand-600 transition-colors">
-                {project.title}
-              </h2>
-
-              {/* Description Preview */}
-              {project.description && (
-                <p className="text-sm text-gray-600 mb-4 line-clamp-2">
-                  {project.description}
-                </p>
-              )}
-
-              {/* Location */}
-              {project.location_name && (
-                <div className="flex items-center gap-1 text-sm text-gray-500 mb-4">
-                  <MapPin className="h-4 w-4" />
-                  <span className="truncate">{project.location_name}</span>
-                </div>
-              )}
-
-              {/* Engagement Metrics */}
-              <div className="flex items-center gap-4 text-sm text-gray-500 pt-4 border-t border-gray-100">
-                <div className="flex items-center gap-1">
-                  <ArrowUp className="h-4 w-4" />
-                  <span>{project.vote_score}</span>
-                </div>
-                <div className="flex items-center gap-1">
-                  <MessageCircle className="h-4 w-4" />
-                  <span>{project.comment_count}</span>
-                </div>
-                <div className="flex items-center gap-1">
-                  <Eye className="h-4 w-4" />
-                  <span>{project.follower_count}</span>
-                </div>
-              </div>
-            </Link>
-          ))}
-        </div>
-
-        {projectsWithCategory.length === 0 && (
-          <div className="text-center py-12">
-            <MapPin className="h-12 w-12 text-gray-300 mx-auto mb-3" />
-            <p className="text-gray-500">No projects found</p>
-          </div>
-        )}
-      </main>
+      <ProjectsClient
+        projects={projectsWithCategory}
+        filterOptions={filterOptions}
+        initialFilters={{
+          categories: categoryFilters,
+          statuses: statusFilters,
+          sources: sourceFilters,
+          neighborhoods: neighborhoodFilters,
+          sort: sortBy,
+        }}
+      />
     </div>
   );
 }

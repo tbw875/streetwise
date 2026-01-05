@@ -62,7 +62,7 @@ Streetwise is a civic engagement platform for tracking Seattle transportation pr
 ### Phase 1 (In Progress)
 - [x] Project detail page (`/projects/[id]`)
 - [x] Projects list page (`/projects`)
-- [ ] List/tile view with filters and sorting
+- [x] List/tile view with filters and sorting
 - [ ] User suggestion form
 - [ ] Global navigation header on all pages
 
