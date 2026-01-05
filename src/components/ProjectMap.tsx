@@ -36,32 +36,20 @@ export default function ProjectMap({
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    // Check for Mapbox token
     const token = process.env.NEXT_PUBLIC_MAPBOX_TOKEN;
-    console.log('Mapbox token exists:', !!token);
 
     if (!token) {
-      console.error('Mapbox token not found');
       setError('Mapbox token not found. Please add NEXT_PUBLIC_MAPBOX_TOKEN to your .env.local file.');
       setIsLoading(false);
       return;
     }
 
-    // Initialize map
-    if (!mapContainer.current) {
-      console.log('Map container not ready');
-      return;
-    }
-    if (map.current) {
-      console.log('Map already initialized');
-      return; // Initialize only once
-    }
+    if (map.current) return;
+    if (!mapContainer.current) return;
 
-    console.log('Initializing Mapbox with token:', token.substring(0, 20) + '...');
     mapboxgl.accessToken = token;
 
     try {
-      console.log('Creating map instance...');
       map.current = new mapboxgl.Map({
         container: mapContainer.current,
         style: 'mapbox://styles/mapbox/streets-v12',
@@ -69,20 +57,15 @@ export default function ProjectMap({
         zoom: initialZoom,
       });
 
-      console.log('Map instance created, waiting for load event...');
-
-      // Add navigation controls
       map.current.addControl(new mapboxgl.NavigationControl(), 'top-right');
-
-      // Add scale control
       map.current.addControl(new mapboxgl.ScaleControl(), 'bottom-left');
 
       map.current.on('load', () => {
-        console.log('Map loaded successfully!');
+        if (map.current) {
+          map.current.resize();
+        }
         setIsLoading(false);
 
-        // Add markers for each project
-        console.log('Adding markers for', projects.length, 'projects');
         projects.forEach((project) => {
           if (!project.geometry || !map.current) return;
 
@@ -189,28 +172,12 @@ export default function ProjectMap({
         });
       });
 
-      map.current.on('error', (e) => {
-        console.error('Mapbox error:', e);
+      map.current.on('error', () => {
         setError('Failed to load map. Please check your Mapbox token.');
         setIsLoading(false);
       });
 
-      // Timeout fallback if map doesn't load in 10 seconds
-      const loadTimeout = setTimeout(() => {
-        if (map.current && isLoading) {
-          console.error('Map load timeout - map did not fire load event within 10 seconds');
-          setError('Map loading timed out. Please check your internet connection and Mapbox token.');
-          setIsLoading(false);
-        }
-      }, 10000);
-
-      // Clear timeout when map loads
-      map.current.once('load', () => {
-        clearTimeout(loadTimeout);
-      });
-
     } catch (err) {
-      console.error('Error initializing map:', err);
       setError('Failed to initialize map. Please check your configuration.');
       setIsLoading(false);
     }
@@ -224,44 +191,41 @@ export default function ProjectMap({
     };
   }, [projects, initialCenter, initialZoom]);
 
-  // Error state
-  if (error) {
-    return (
-      <div className="w-full h-full flex items-center justify-center bg-gray-50">
-        <div className="text-center max-w-md p-8">
-          <div className="flex h-16 w-16 items-center justify-center rounded-full bg-red-100 text-red-600 mx-auto mb-4">
-            <AlertCircle className="h-8 w-8" />
-          </div>
-          <h3 className="text-lg font-semibold text-gray-900 mb-2">Map Error</h3>
-          <p className="text-sm text-gray-600 mb-4">{error}</p>
-          <div className="bg-gray-100 rounded-lg p-4 text-left">
-            <p className="text-xs font-medium text-gray-700 mb-2">To fix this:</p>
-            <ol className="text-xs text-gray-600 space-y-1 list-decimal list-inside">
-              <li>Get a free token from <a href="https://account.mapbox.com/access-tokens/" target="_blank" rel="noopener noreferrer" className="text-brand-600 underline">Mapbox</a></li>
-              <li>Add to .env.local: NEXT_PUBLIC_MAPBOX_TOKEN=your_token</li>
-              <li>Restart the development server</li>
-            </ol>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  // Loading state
-  if (isLoading) {
-    return (
-      <div className="w-full h-full flex items-center justify-center bg-gray-100">
-        <div className="text-center">
-          <MapPin className="h-12 w-12 text-gray-300 mx-auto mb-2 animate-pulse" />
-          <p className="text-gray-400">Loading map...</p>
-        </div>
-      </div>
-    );
-  }
-
   return (
-    <div className="relative w-full h-full">
-      <div ref={mapContainer} className="absolute inset-0" />
+    <div className="absolute inset-0">
+      {/* Map container - always rendered */}
+      <div ref={mapContainer} className="absolute inset-0" style={{ width: '100%', height: '100%' }} />
+
+      {/* Loading overlay */}
+      {isLoading && (
+        <div className="absolute inset-0 flex items-center justify-center bg-gray-100 z-10">
+          <div className="text-center">
+            <MapPin className="h-12 w-12 text-gray-300 mx-auto mb-2 animate-pulse" />
+            <p className="text-gray-400">Loading map...</p>
+          </div>
+        </div>
+      )}
+
+      {/* Error overlay */}
+      {error && (
+        <div className="absolute inset-0 flex items-center justify-center bg-gray-50 z-10">
+          <div className="text-center max-w-md p-8">
+            <div className="flex h-16 w-16 items-center justify-center rounded-full bg-red-100 text-red-600 mx-auto mb-4">
+              <AlertCircle className="h-8 w-8" />
+            </div>
+            <h3 className="text-lg font-semibold text-gray-900 mb-2">Map Error</h3>
+            <p className="text-sm text-gray-600 mb-4">{error}</p>
+            <div className="bg-gray-100 rounded-lg p-4 text-left">
+              <p className="text-xs font-medium text-gray-700 mb-2">To fix this:</p>
+              <ol className="text-xs text-gray-600 space-y-1 list-decimal list-inside">
+                <li>Get a free token from <a href="https://account.mapbox.com/access-tokens/" target="_blank" rel="noopener noreferrer" className="text-brand-600 underline">Mapbox</a></li>
+                <li>Add to .env.local: NEXT_PUBLIC_MAPBOX_TOKEN=your_token</li>
+                <li>Restart the development server</li>
+              </ol>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
